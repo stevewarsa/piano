@@ -1,12 +1,18 @@
 import {configureStore, createSlice} from "@reduxjs/toolkit";
 import {AppState} from "../model/AppState";
+import {PracticeEntry} from "../model/practice-entry";
 
 const initialState: AppState = {
+  practiceEntries: []
 };
 const state = createSlice({
   name: "state",
   initialState: initialState,
   reducers: {
+    addPracticeEntry(state, action) {
+      const practiceEntry: PracticeEntry = action.payload;
+      state.practiceEntries.push(practiceEntry);
+    }
   }
 });
 
