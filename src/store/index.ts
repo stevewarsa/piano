@@ -12,6 +12,9 @@ const state = createSlice({
     addPracticeEntry(state, action) {
       const practiceEntry: PracticeEntry = action.payload;
       state.practiceEntries.push(practiceEntry);
+    },
+    setPracticeEntries(state, action) {
+      state.practiceEntries = action.payload;
     }
   }
 });
