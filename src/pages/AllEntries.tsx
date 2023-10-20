@@ -52,7 +52,7 @@ const AllEntries = () => {
                 <Container className="mt-3"></Container>
             );
         } else {
-            return <h3>No Links loaded...</h3>
+            return <h3>No Practice Sessions Exist Yet...</h3>
         }
     }
 }

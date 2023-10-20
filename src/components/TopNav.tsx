@@ -17,6 +17,7 @@ const TopNav = () => {
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav>
                         <Nav.Link as={Link} to="/allEntries">View All Entries</Nav.Link>
+                        <Nav.Link as={Link} to="/addPractice">Add Practice</Nav.Link>
                     </Nav>
                 </Navbar.Collapse>
             </Container>
