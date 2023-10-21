@@ -4,6 +4,7 @@ import {
   format,
   subDays,
   differenceInCalendarDays,
+  differenceInMinutes,
   toDate,
   parse,
   isBefore,
@@ -73,6 +74,13 @@ export class DateUtils {
 
   static daysInBetween(date1: Date | string, date2: Date | string): number {
     return differenceInCalendarDays(DateUtils.handleStringOrDate(date1), DateUtils.handleStringOrDate(date2));
+  }
+
+  static minutesInBetween(date1: Date, date2: Date): number {
+    console.log("DateUtils.minutesInBetween - calculating difference in minutes between: date1=" + date1 + ", date2=" + date2);
+    const diffInMinutes = differenceInMinutes(date1, date2);
+    console.log("DateUtils.minutesInBetween - difference is " + diffInMinutes);
+    return diffInMinutes;
   }
 
   static addMonths(date: Date | string, numberOfMonths: number): Date {
@@ -153,7 +161,6 @@ export class DateUtils {
       } else {
         return eod ? endOfDay(dt) : dt;
       }
-      return typeof dt === "undefined" ? undefined : endOfDay(dt);
     }
     return eod ? endOfDay(toDate(date)) : toDate(date);
   }
