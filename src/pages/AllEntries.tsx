@@ -12,19 +12,16 @@ import {AgGridReact} from "ag-grid-react";
 import {DateUtils} from "../helpers/date.utils";
 import {ColDef} from "ag-grid-community";
 import {ButtonCellRenderer} from "../renderers/button.cell.renderer";
-import {useLocation, useNavigate} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 
-const timeFormat = "MM-dd-yy HH:mm";
+const timeFormat = "EEE MM-dd-yy HH:mm";
 const AllEntries = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const practiceEntries: PracticeEntry[] = useSelector((st: AppState) => st.practiceEntries);
     const [busy, setBusy] = useState({state: false, message: ""});
-    const [page, setPage] = useState(1);
-    const [pageLen, setPageLen] = useState(1);
-    const [currPageEntries, setCurrPageEntries] = useState<PracticeEntry[]>([]);
-    const [gridApi, setGridApi] = useState(null);
-    const [columnDefs, setColumnDefs] = useState<ColDef[]>([
+
+    const columnDefs: ColDef[] = [
         {
             field: 'startDtTimeLong',
             cellRenderer: ButtonCellRenderer,
@@ -42,7 +39,7 @@ const AllEntries = () => {
         {field: 'duration'},
         {field: 'practiceLocation'},
         {field: 'lessonContent'}
-    ]);
+    ];
 
     useEffect(() => {
         setBusy({state: true, message: "Loading practice entries from DB..."});
@@ -57,52 +54,13 @@ const AllEntries = () => {
         navigate("/addPractice", {state: data});
     }
 
-    const handleFirstPage = () => {
-        setPage(1);
-    };
-
-    const handleNextPage = () => {
-        console.log("handleNextPage - page=" + page + ", pageLen=" + pageLen);
-        if (page === pageLen) {
-            return;
-        }
-        setPage(prev => prev + 1);
-    };
-
-    const handlePrevPage = () => {
-        if (page === 1) {
-            return;
-        }
-        setPage(prev => prev - 1);
-    };
-
-    const handleLastPage = () => {
-        setPage(pageLen);
-    };
-
-    const onGridReady = params => {
-        setGridApi(params.api);
-    };
-
     if (busy.state) {
         return <SpinnerTimer message={busy.message} />;
     } else if (practiceEntries && practiceEntries.length > 0) {
-        const locPracticeEntries = [...practiceEntries];
-        locPracticeEntries.sort((a: PracticeEntry, b: PracticeEntry) => {
-            const dt1 = new Date(a.startDtTimeLong);
-            const dt2 = new Date(b.startDtTimeLong);
-            if (DateUtils.isBefore(dt1, dt2)) {
-                return 1;
-            } else if (DateUtils.isAfter(dt1, dt2)) {
-                return -1;
-            }
-            return 0;
-        });
         return (
             <Container className="mt-3 ag-theme-alpine" style={{height: 400, width: "100%"}}>
                 <AgGridReact
-                    onGridReady={onGridReady}
-                    rowData={locPracticeEntries}
+                    rowData={practiceEntries}
                     columnDefs={columnDefs}
                     pagination={true}
                     paginationPageSize={5}>

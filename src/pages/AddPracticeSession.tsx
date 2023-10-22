@@ -146,10 +146,10 @@ const AddPracticeSession = () => {
                     </Modal.Footer>
                 </Modal>
                 <Row className="mb-2">
-                    <Col lg={4}>
+                    <Col lg={2}>
                         <Form.Label htmlFor="startDtTime">Start Time</Form.Label>
                     </Col>
-                    <Col lg="4">
+                    <Col lg={10}>
                         <Form.Text id="startDtTime" className="me-3">
                             {practiceStartTimeStr}
                         </Form.Text>
@@ -161,10 +161,10 @@ const AddPracticeSession = () => {
                     </Col>
                 </Row>
                 <Row className="mb-2">
-                    <Col lg={4}>
+                    <Col lg={2}>
                         <Form.Label>Location</Form.Label>
                     </Col>
-                    <Col lg="4">
+                    <Col lg={10}>
                         <Form.Check
                             inline
                             label="Church"
@@ -186,28 +186,28 @@ const AddPracticeSession = () => {
                     </Col>
                 </Row>
                 <Row className="mb-2">
-                    <Col lg={4}>
+                    <Col lg={2}>
                         <Form.Label>Lesson Content</Form.Label>
                     </Col>
-                    <Col lg="4">
+                    <Col lg={10}>
                         <Form.Control value={lessonContent} placeholder="Lesson Content" onChange={handleLessonContent}>
                         </Form.Control>
                     </Col>
                 </Row>
                 <Row className="mb-2">
-                    <Col lg={4}>
+                    <Col lg={2}>
                         <Form.Label>Notes</Form.Label>
                     </Col>
-                    <Col lg="4">
+                    <Col lg={10}>
                         <Form.Control className="fs-1" as="textarea" rows={5} value={notes} placeholder="Notes" onChange={handleNotes}>
                         </Form.Control>
                     </Col>
                 </Row>
                 <Row className="mb-2">
-                    <Col lg={4}>
+                    <Col lg={2}>
                         <Form.Label htmlFor="endDtTime">End Time</Form.Label>
                     </Col>
-                    <Col lg="4">
+                    <Col lg={10}>
                         <Form.Text id="endDtTime" className="me-3">
                             {practiceEndTimeStr}
                         </Form.Text>
@@ -220,10 +220,10 @@ const AddPracticeSession = () => {
                 </Row>
                 {duration > -1 &&
                 <Row className="mb-2">
-                    <Col lg={4}>
+                    <Col lg={2}>
                         <Form.Label htmlFor="duration">Duration</Form.Label>
                     </Col>
-                    <Col lg="4">
+                    <Col lg={10}>
                         <Form.Text id="duration">
                             {duration} minutes
                         </Form.Text>
@@ -231,7 +231,7 @@ const AddPracticeSession = () => {
                 </Row>
                 }
                 <Row className="mb-2">
-                    <Col lg={8}>
+                    <Col lg={12}>
                         <Button onClick={handleSubmit}>Submit</Button>
                     </Col>
                 </Row>

@@ -11,7 +11,7 @@ if (file_exists($filename)) {
 	/** @noinspection PhpParamsInspection */
 	$db = new SQLite3($filename);
 	$results = $db->query('SELECT START_DATE_TIME_LONG, START_DATE_TIME_STR, END_DATE_TIME_LONG, END_DATE_TIME_STR, 
-       DURATION, PRACTICE_LOCATION, LESSON_CONTENT, NOTES from PIANO_PRACTICE');
+       DURATION, PRACTICE_LOCATION, LESSON_CONTENT, NOTES from PIANO_PRACTICE ORDER by START_DATE_TIME_LONG DESC');
 
 	$practiceEntries = array();
 	while ($row = $results->fetchArray()) {
