@@ -1,6 +1,7 @@
 import {useDispatch} from "react-redux";
 import {useEffect, useState} from "react";
-import {Button, Col, Container, Form, Row} from "react-bootstrap";
+import {useLocation, useNavigate} from "react-router-dom";
+import {Button, Col, Container, Form, Modal, Row} from "react-bootstrap";
 import SpinnerTimer from "../components/SpinnerTimer";
 import practiceService from "../services/practice-service";
 import {stateActions} from "../store";
@@ -12,24 +13,31 @@ const timeFormat = "MM-dd-yyyy HH:mm:ss";
 
 const AddPracticeSession = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [busy, setBusy] = useState({state: false, message: ""});
     const [practiceStartTime, setPracticeStartTime] = useState<number>(startTime);
     const [practiceStartTimeStr, setPracticeStartTimeStr] = useState<string>(DateUtils.formatDateTime(new Date(startTime), timeFormat));
     const [practiceEndTime, setPracticeEndTime] = useState<number>(undefined);
     const [practiceEndTimeStr, setPracticeEndTimeStr] = useState<string>("N/A");
-    const [location, setLocation] = useState<string>("Church");
+    const [practiceLocation, setPracticeLocation] = useState<string>("Church");
     const [lessonContent, setLessonContent] = useState<string>("");
     const [notes, setNotes] = useState<string>("");
     const [duration, setDuration] = useState<number>(-1);
+    const [show, setShow] = useState<boolean>(false);
+    const [editingStartDateTime, setEditingStartDateTime] = useState<boolean>(false);
+    const [editedDateString, setEditedDateString] = useState<string>("");
+    let location = useLocation();
 
     useEffect(() => {
-        setPracticeStartTimeStr(DateUtils.formatDateTime(new Date(practiceStartTime), timeFormat));
+        const formattedDate = DateUtils.formatDateTime(new Date(practiceStartTime), timeFormat);
+        setPracticeStartTimeStr(formattedDate);
+        setEditedDateString(formattedDate);
     }, [practiceStartTime]);
 
     useEffect(() => {
         console.log("AddPracticeSession.useEffect[practiceEndTime] - practiceEndTime = " + practiceEndTime + ", practiceEndTimeStr = " + practiceEndTimeStr + ", practiceStartTime = " + practiceStartTime + ", practiceStartTimeStr = " + practiceStartTimeStr);
         if (typeof practiceEndTime !== "undefined" && typeof practiceStartTime !== "undefined") {
-            console.log("AddPracticeSession.useEffect[practiceEndTime] - setting practiceEndTimeStr")
+            console.log("AddPracticeSession.useEffect[practiceEndTime] - setting practiceEndTimeStr to " + DateUtils.formatDateTime(new Date(practiceEndTime), timeFormat));
             setPracticeEndTimeStr(DateUtils.formatDateTime(new Date(practiceEndTime), timeFormat));
             setDuration(DateUtils.minutesInBetween(new Date(practiceEndTime), new Date(practiceStartTime)));
         }
@@ -41,6 +49,18 @@ const AddPracticeSession = () => {
             dispatch(stateActions.setPracticeEntries(practiceData.data));
             setBusy({state: false, message: ""});
         });
+        if (location?.state?.hasOwnProperty("startDtTimeLong")) {
+            const practiceEntryToEdit: PracticeEntry = location.state as PracticeEntry;
+            console.log("AddPracticeSession.useEffect[dispatch] - practiceEntryToEdit: ", practiceEntryToEdit);
+            setPracticeStartTime(parseInt(String(practiceEntryToEdit.startDtTimeLong)));
+            setPracticeStartTimeStr(practiceEntryToEdit.startDtTimeStr);
+            setPracticeLocation(practiceEntryToEdit.practiceLocation);
+            setNotes(practiceEntryToEdit.notes);
+            setLessonContent(practiceEntryToEdit.lessonContent);
+            setPracticeEndTime(parseInt(String(practiceEntryToEdit.endDtTimeLong)));
+            setPracticeEndTimeStr(practiceEntryToEdit.endDtTimeStr);
+            setDuration(parseInt(String(practiceEntryToEdit.duration)));
+        }
     }, [dispatch]);
 
     const handleLessonContent = (event: any) => {
@@ -51,18 +71,45 @@ const AddPracticeSession = () => {
         setNotes(event.target.value);
     };
 
-    const handleSubmit = () => {
+    const handleClose = () => {
+        console.log("handleClose");
+        setShow(false);
+    };
+
+    const handleSaveDate = () => {
+        console.log("handleSaveDate");
+        const dt = DateUtils.parseDate(editedDateString, timeFormat);
+        if (editingStartDateTime) {
+            setPracticeStartTime(dt.getTime());
+        } else {
+            setPracticeEndTime(dt.getTime());
+        }
+        setShow(false);
+    };
+
+    const handleSubmit = async () => {
+        setBusy({state: true, message: "Saving current practice entry..."});
         const practiceEntry: PracticeEntry = {
             duration: duration,
             lessonContent: lessonContent,
             notes: notes,
             endDtTimeLong: practiceEndTime,
-            practiceLocation: location,
+            practiceLocation: practiceLocation,
             endDtTimeStr: practiceEndTimeStr,
             startDtTimeLong: practiceStartTime,
             startDtTimeStr: practiceStartTimeStr
         };
         console.log("handleSubmit - Here is the practiceEntry: ", practiceEntry);
+        const saveEntryResult: any = await practiceService.savePracticeEntry(practiceEntry);
+        console.log("AddPracticeSession.handleSubmit - here is the response:");
+        console.log(saveEntryResult.data);
+        if (typeof saveEntryResult.data === "string" && saveEntryResult.data.startsWith("error")) {
+            console.log("There was an error: " + saveEntryResult.data)
+        } else {
+            dispatch(stateActions.addPracticeEntry(saveEntryResult.data));
+            setBusy({state: false, message: ""});
+            navigate("/allEntries");
+        }
     };
 
     if (busy.state) {
@@ -71,6 +118,33 @@ const AddPracticeSession = () => {
         return (
             <Container className="mt-3">
                 <h3 className="mb-3">Add Practice Session</h3>
+                <Modal show={show} onHide={handleClose}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Edit {editingStartDateTime ? "Start" : "End"} Date</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Form>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Enter Date/Time ({timeFormat})</Form.Label>
+                                <Form.Control
+                                    value={editedDateString}
+                                    type="string"
+                                    placeholder={timeFormat}
+                                    onChange={evt => setEditedDateString(evt.target.value)}
+                                    autoFocus
+                                />
+                            </Form.Group>
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleClose}>
+                            Close
+                        </Button>
+                        <Button variant="primary" onClick={handleSaveDate}>
+                            Save Changes
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
                 <Row className="mb-2">
                     <Col lg={4}>
                         <Form.Label htmlFor="startDtTime">Start Time</Form.Label>
@@ -79,7 +153,11 @@ const AddPracticeSession = () => {
                         <Form.Text id="startDtTime" className="me-3">
                             {practiceStartTimeStr}
                         </Form.Text>
-                        <Button size="sm" onClick={() => setPracticeStartTime(new Date().getTime())}>Now</Button>
+                        <Button className="me-3" size="sm" onClick={() => setPracticeStartTime(new Date().getTime())}>Now</Button>
+                        <Button className="me-3" size="sm" onClick={() => {
+                            setEditingStartDateTime(true);
+                            setShow(true);
+                        }}>Enter Exact</Button>
                     </Col>
                 </Row>
                 <Row className="mb-2">
@@ -91,8 +169,8 @@ const AddPracticeSession = () => {
                             inline
                             label="Church"
                             name="location"
-                            onChange={() => setLocation("Church")}
-                            checked={location === "Church"}
+                            onChange={() => setPracticeLocation("Church")}
+                            checked={practiceLocation === "Church"}
                             type="radio"
                             id="home"
                         />
@@ -100,8 +178,8 @@ const AddPracticeSession = () => {
                             inline
                             label="Home"
                             name="location"
-                            onChange={() => setLocation("Home")}
-                            checked={location === "Home"}
+                            onChange={() => setPracticeLocation("Home")}
+                            checked={practiceLocation === "Home"}
                             type="radio"
                             id="home"
                         />
@@ -133,7 +211,11 @@ const AddPracticeSession = () => {
                         <Form.Text id="endDtTime" className="me-3">
                             {practiceEndTimeStr}
                         </Form.Text>
-                        <Button size="sm" onClick={() => setPracticeEndTime(new Date().getTime())}>Now</Button>
+                        <Button className="me-3" size="sm" onClick={() => setPracticeEndTime(new Date().getTime())}>Now</Button>
+                        <Button className="me-3" size="sm" onClick={() => {
+                            setEditingStartDateTime(false);
+                            setShow(true);
+                        }}>Enter Exact</Button>
                     </Col>
                 </Row>
                 {duration > -1 &&

@@ -1,9 +1,14 @@
 import axios, {AxiosInstance, AxiosRequestConfig} from "axios";
 import axiosRetry from "axios-retry";
+import {PracticeEntry} from "../model/practice-entry";
 
 class PracticeService {
     public getPracticeEntries() {
         return PracticeService.buildAxios().get<any[]>("/piano-app/server/get_practice_entries.php");
+    }
+
+    public savePracticeEntry(entry: PracticeEntry) {
+        return PracticeService.buildAxios().post("/piano-app/server/add_practice_entry.php", entry);
     }
 
     private static buildAxios(): AxiosInstance {
