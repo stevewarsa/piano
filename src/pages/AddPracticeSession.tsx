@@ -26,6 +26,8 @@ const AddPracticeSession = () => {
     const [show, setShow] = useState<boolean>(false);
     const [editingStartDateTime, setEditingStartDateTime] = useState<boolean>(false);
     const [editedDateString, setEditedDateString] = useState<string>("");
+    const [showReason, setShowReason] = useState<boolean>(false);
+    const [noPracticeReason, setNoPracticeReason] = useState<string>("");
     let location = useLocation();
 
     useEffect(() => {
@@ -112,6 +114,32 @@ const AddPracticeSession = () => {
         }
     };
 
+    const handleNoPractice = async () => {
+        setBusy({state: true, message: "Saving 'no practice'..."});
+        const practiceEntry: PracticeEntry = {
+            duration: 0,
+            lessonContent: noPracticeReason,
+            notes: noPracticeReason,
+            endDtTimeLong: practiceStartTime,
+            practiceLocation: "None",
+            endDtTimeStr: practiceStartTimeStr,
+            startDtTimeLong: practiceStartTime,
+            startDtTimeStr: practiceStartTimeStr
+        };
+        console.log("handleSubmit - Here is the practiceEntry: ", practiceEntry);
+        const saveEntryResult: any = await practiceService.savePracticeEntry(practiceEntry);
+        console.log("AddPracticeSession.handleSubmit - here is the response:");
+        console.log(saveEntryResult.data);
+        if (typeof saveEntryResult.data === "string" && saveEntryResult.data.startsWith("error")) {
+            console.log("There was an error: " + saveEntryResult.data)
+        } else {
+            dispatch(stateActions.addPracticeEntry(saveEntryResult.data));
+            setBusy({state: false, message: ""});
+            navigate("/allEntries");
+        }
+
+    };
+
     if (busy.state) {
         return <SpinnerTimer message={busy.message} />;
     } else {
@@ -141,6 +169,33 @@ const AddPracticeSession = () => {
                             Close
                         </Button>
                         <Button variant="primary" onClick={handleSaveDate}>
+                            Save Changes
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+                <Modal show={showReason} onHide={() => setShowReason(false)}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>No Practice Reason</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Form>
+                            <Form.Group className="mb-3">
+                                <Form.Label>No Practice Reason</Form.Label>
+                                <Form.Control
+                                    value={noPracticeReason}
+                                    type="string"
+                                    placeholder="Enter No Practice Reason"
+                                    onChange={evt => setNoPracticeReason(evt.target.value)}
+                                    autoFocus
+                                />
+                            </Form.Group>
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setShowReason(false)}>
+                            Close
+                        </Button>
+                        <Button variant="primary" onClick={handleNoPractice}>
                             Save Changes
                         </Button>
                     </Modal.Footer>
@@ -231,8 +286,9 @@ const AddPracticeSession = () => {
                 </Row>
                 }
                 <Row className="mb-2">
-                    <Col lg={12}>
-                        <Button onClick={handleSubmit}>Submit</Button>
+                    <Col lg={6}>
+                        <Button className="me-3" onClick={handleSubmit}>Submit</Button>
+                        <Button onClick={() => setShowReason(true)}>No Practice Today</Button>
                     </Col>
                 </Row>
             </Container>
