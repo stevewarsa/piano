@@ -10,6 +10,7 @@ import {PracticeEntry} from "../model/practice-entry";
 
 const startTime = new Date().getTime();
 const timeFormat = "MM-dd-yyyy HH:mm:ss";
+const editedTimeFormat = "M/d/yy H:mm";
 
 const AddPracticeSession = () => {
     const dispatch = useDispatch();
@@ -32,8 +33,9 @@ const AddPracticeSession = () => {
 
     useEffect(() => {
         const formattedDate = DateUtils.formatDateTime(new Date(practiceStartTime), timeFormat);
+        const formattedDateForEditing = DateUtils.formatDateTime(new Date(practiceStartTime), editedTimeFormat);
         setPracticeStartTimeStr(formattedDate);
-        setEditedDateString(formattedDate);
+        setEditedDateString(formattedDateForEditing);
     }, [practiceStartTime]);
 
     useEffect(() => {
@@ -80,7 +82,7 @@ const AddPracticeSession = () => {
 
     const handleSaveDate = () => {
         console.log("handleSaveDate");
-        const dt = DateUtils.parseDate(editedDateString, timeFormat);
+        const dt = DateUtils.parseDate(editedDateString, editedTimeFormat);
         if (editingStartDateTime) {
             setPracticeStartTime(dt.getTime());
         } else {
