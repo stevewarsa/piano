@@ -10,7 +10,7 @@ import {PracticeEntry} from "../model/practice-entry";
 
 const startTime = new Date().getTime();
 const timeFormat = "MM-dd-yyyy HH:mm:ss";
-const editedTimeFormat = "M/d/yy H:mm";
+const editedTimeFormat = "M/d/yyyy H:mm";
 
 const AddPracticeSession = () => {
     const dispatch = useDispatch();
@@ -64,6 +64,11 @@ const AddPracticeSession = () => {
             setPracticeEndTime(parseInt(String(practiceEntryToEdit.endDtTimeLong)));
             setPracticeEndTimeStr(practiceEntryToEdit.endDtTimeStr);
             setDuration(parseInt(String(practiceEntryToEdit.duration)));
+        } else {
+            // make sure to update the start time everytime this component is mounted
+            const newStartTime = new Date().getTime();
+            setPracticeStartTime(newStartTime);
+            setPracticeStartTimeStr(DateUtils.formatDateTime(new Date(newStartTime), timeFormat));
         }
     }, [dispatch]);
 
