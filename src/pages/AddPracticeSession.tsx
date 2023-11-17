@@ -33,9 +33,27 @@ const AddPracticeSession = () => {
     const [showReason, setShowReason] = useState<boolean>(false);
     const [noPracticeReason, setNoPracticeReason] = useState<string>("");
     const [showAddSong, setShowAddSong] = useState<boolean>(false);
+    const [showSongList, setShowSongList] = useState<boolean>(false);
 	const [songName, setSongName] = useState<string>("");
 	const [selectedSongs, setSelectedSongs] = useState<Song[]>([]);
     let location = useLocation();
+
+    const loadSongs = async () => {
+        if (!songs || songs.length === 0) {
+            console.log("AddPracticeSession.useEffect[] - Songs are not loaded yet, so call server to load them...");
+            const locSongs = await practiceService.getSongs();
+            const songResponse: Song[] = locSongs.data;
+            dispatch(stateActions.setSongs(songResponse));
+            return songResponse;
+        } else {
+            return songs;
+        }
+    }
+
+    useEffect(() => {
+        // when this component initially loads, get the songs if not already loaded
+        loadSongs();
+    }, []);
 
     useEffect(() => {
         const formattedDate = DateUtils.formatDateTime(new Date(practiceStartTime), timeFormat);
@@ -70,6 +88,21 @@ const AddPracticeSession = () => {
             setPracticeEndTime(parseInt(String(practiceEntryToEdit.endDtTimeLong)));
             setPracticeEndTimeStr(practiceEntryToEdit.endDtTimeStr);
             setDuration(parseInt(String(practiceEntryToEdit.duration)));
+            if (practiceEntryToEdit.songsPracticed && practiceEntryToEdit.songsPracticed.length > 0) {
+                if (!songs || songs.length === 0) {
+                    loadSongs().then(songsJustLoaded => {
+                        const songsPracticedForEntry = practiceEntryToEdit.songsPracticed.map(songId => songsJustLoaded.find(s => s.songId === songId));
+                        console.log("AddPracticeSession.useEffect[dispatch] - setting selected songs to:", songsPracticedForEntry);
+                        setSelectedSongs(songsPracticedForEntry);
+                        setShowSongList(true);
+                    });
+                } else {
+                    const songsPracticedForEntry = practiceEntryToEdit.songsPracticed.map(songId => songs.find(s => s.songId === songId));
+                    console.log("AddPracticeSession.useEffect[dispatch] - setting selected songs to:", songsPracticedForEntry);
+                    setSelectedSongs(songsPracticedForEntry);
+                    setShowSongList(true);
+                }
+            }
         } else {
             // make sure to update the start time everytime this component is mounted
             const newStartTime = new Date().getTime();
@@ -84,6 +117,11 @@ const AddPracticeSession = () => {
 
     const handleNotes = (event: any) => {
         setNotes(event.target.value);
+    };
+
+    const handleShowAddSong = () => {
+        setSongName("");
+        setShowAddSong(true);
     };
 
     const handleClose = () => {
@@ -329,8 +367,17 @@ const AddPracticeSession = () => {
                         </Form.Control>
                     </Col>
                 </Row>
-				{songs && songs.length > 0 && songs.map(s =>
-					<Row key={s.songId} className="mb-2">
+                {songs && songs.length > 0 &&
+                    <Row className="mb-2">
+                        <Col>
+                            <Button variant={"outline-primary"} className="me-3" size="lg" onClick={() => setShowSongList(!showSongList)}>
+                                <i className={showSongList ? "fa fa-toggle-up me-2" : "fa fa-toggle-down me-2"} /> {showSongList ? " Hide Song List" : " Show Song List"}
+                            </Button>
+                        </Col>
+                    </Row>
+                }
+                {songs && songs.length > 0 && showSongList && songs.map(s =>
+					<Row key={s.songId} className="m-2 p-1 border border-info">
 						<Col>
 							<Form.Label>{s.songNm}</Form.Label>
 						</Col>
@@ -356,7 +403,7 @@ const AddPracticeSession = () => {
                 </Row>
 				<Row className="mb-2">
 					<Col lg={10}>
-						<Button className="me-3" size="sm" onClick={() => setShowAddSong(true)}>Add Song</Button>
+						<Button className="me-3" size="sm" onClick={handleShowAddSong}>Add Song</Button>
 					</Col>
 				</Row>
                 <Row className="mb-2">

@@ -7,12 +7,20 @@ class PracticeService {
         return PracticeService.buildAxios().get<any[]>("/piano-app/server/get_practice_entries.php");
     }
 
+    public getSongsPracticedForPracticeSession(practiceEntryId: number) {
+        return PracticeService.buildAxios().get<any[]>("/piano-app/server/get_songs_practiced_for_practice_session.php?practiceEntryId=" + practiceEntryId);
+    }
+
     public savePracticeEntry(entry: PracticeEntry) {
         return PracticeService.buildAxios().post("/piano-app/server/add_practice_entry.php", entry);
     }
 
     public saveNewSong(songName: string) {
         return PracticeService.buildAxios().post("/piano-app/server/add_song.php", songName);
+    }
+
+    public getSongs() {
+        return PracticeService.buildAxios().get("/piano-app/server/get_songs.php")
     }
 
     private static buildAxios(): AxiosInstance {

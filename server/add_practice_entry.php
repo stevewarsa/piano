@@ -1,4 +1,5 @@
-<?php /** @noinspection SqlResolve */
+<?php /** @noinspection PhpParamsInspection */
+/** @noinspection SqlResolve */
 /** @noinspection SqlNoDataSourceInspection */
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
@@ -35,6 +36,28 @@ if (file_exists($filename)) {
         $statement->bindValue(':notes', $practiceEntry->notes);
 		$statement->execute();
 		$statement->close();
+        if ($db->changes() >= 1) {
+            // an update was made, which means a practice entry already existed.  Therefore, delete the related songs
+            // and save them again, in case they changed
+            error_log("add_practice_entry.php - On updated practice entry, removing related songs practiced...");
+            $statement = $db->prepare("delete from PRACTICE_ENTRY_SONG where PRACTICE_ENTRY_ID = :startDateTimeLong");
+            $statement->bindValue(':startDateTimeLong', $practiceEntry->startDtTimeLong);
+            $statement->execute();
+            $statement->close();
+            $statement = null;
+            if (sizeof($practiceEntry->songsPracticed) > 0) {
+                error_log("add_practice_entry.php - On updated practice entry, inserting related songs practiced...");
+                foreach ($practiceEntry->songsPracticed as $songId) {
+                    $statement = $db->prepare("insert into PRACTICE_ENTRY_SONG 
+                        (PRACTICE_ENTRY_ID, SONG_ID) values (:startDateTimeLong,:songId)");
+                    $statement->bindValue(':startDateTimeLong', $practiceEntry->startDtTimeLong);
+                    $statement->bindValue(':songId', $songId);
+                    $statement->execute();
+                    $statement->close();
+                    $statement = null;
+                }
+            }
+        }
 
 		if ($db->changes() < 1) {
 			$statement = $db->prepare("insert into PIANO_PRACTICE 
@@ -57,6 +80,18 @@ if (file_exists($filename)) {
 			$statement->execute();
 			$statement->close();
 			error_log("add_practice_entry.php - Inserted new practiceEntry...");
+            if (sizeof($practiceEntry->songsPracticed) > 0) {
+                error_log("add_practice_entry.php - Inserting related songs practiced...");
+                foreach ($practiceEntry->songsPracticed as $songId) {
+                    $statement = $db->prepare("insert into PRACTICE_ENTRY_SONG 
+                        (PRACTICE_ENTRY_ID, SONG_ID) values (:startDateTimeLong,:songId)");
+                    $statement->bindValue(':startDateTimeLong', $practiceEntry->startDtTimeLong);
+                    $statement->bindValue(':songId', $songId);
+                    $statement->execute();
+                    $statement->close();
+                    $statement = null;
+                }
+            }
 		} else {
 			error_log("add_practice_entry.php - Updated practiceEntry...");
 		}

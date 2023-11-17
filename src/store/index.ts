@@ -19,6 +19,9 @@ const state = createSlice({
     },
     addSong(state, action) {
       state.songs.push(action.payload);
+    },
+    setSongs(state, action) {
+      state.songs = action.payload;
     }
   }
 });
