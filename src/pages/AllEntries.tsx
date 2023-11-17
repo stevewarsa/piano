@@ -45,10 +45,6 @@ const AllEntries = () => {
         setBusy({state: true, message: "Loading practice entries from DB..."});
         practiceService.getPracticeEntries().then(async practiceData => {
             const entries: PracticeEntry[] = practiceData.data;
-            for (let entry of entries) {
-                const resp = await practiceService.getSongsPracticedForPracticeSession(entry.startDtTimeLong);
-                entry.songsPracticed = resp.data;
-            }
             dispatch(stateActions.setPracticeEntries(entries));
             setBusy({state: false, message: ""});
             console.log("AllEntries.useEffect[] - here are all the practice entries:", practiceData.data);

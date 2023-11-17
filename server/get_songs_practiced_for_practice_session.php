@@ -12,7 +12,7 @@ if (file_exists($filename)) {
 	/** @noinspection PhpParamsInspection */
 	$db = new SQLite3($filename);
 	$statement = $db->prepare('SELECT PES.SONG_ID, SONG_NM from PRACTICE_ENTRY_SONG PES, SONG S 
-    	WHERE S.SONG_ID = PES.SONG_ID AND PES.PRACTICE_ENTRY_ID = :practiceEntryId ORDER by SONG_NM DESC');
+    	WHERE S.SONG_ID = PES.SONG_ID AND PES.PRACTICE_ENTRY_ID = :practiceEntryId ORDER by SONG_NM');
 	$statement->bindValue(':practiceEntryId', $practiceEntryId);
 	$results = $statement->execute();
 	$songIds = array();

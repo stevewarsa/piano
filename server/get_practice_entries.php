@@ -24,6 +24,17 @@ if (file_exists($filename)) {
 		$practiceEntry->practiceLocation = $row['PRACTICE_LOCATION'];
 		$practiceEntry->lessonContent = $row['LESSON_CONTENT'];
 		$practiceEntry->notes = $row['NOTES'];
+		error_log("get_practice_entries.php - running subquery for practiceEntryId: " . $practiceEntry->startDtTimeLong);
+		$statement = $db->prepare('SELECT SONG_ID from PRACTICE_ENTRY_SONG WHERE PRACTICE_ENTRY_ID = :practiceEntryId');
+		$statement->bindValue(':practiceEntryId', $practiceEntry->startDtTimeLong);
+		$subQueryResults = $statement->execute();
+		$songIds = array();
+		while ($subRow = $subQueryResults->fetchArray()) {
+			array_push($songIds, $subRow['SONG_ID']);
+		}
+		$statement->close();
+		$statement = null;
+		$practiceEntry->songsPracticed = $songIds;
 		array_push($practiceEntries, $practiceEntry);
 	}
 
