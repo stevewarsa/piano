@@ -1,4 +1,4 @@
-import {useDispatch} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import {useEffect, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import {Button, Col, Container, Form, Modal, Row} from "react-bootstrap";
@@ -7,6 +7,8 @@ import practiceService from "../services/practice-service";
 import {stateActions} from "../store";
 import {DateUtils} from "../helpers/date.utils";
 import {PracticeEntry} from "../model/practice-entry";
+import {Song} from "../model/song";
+import {AppState} from "../model/AppState";
 
 const startTime = new Date().getTime();
 const timeFormat = "MM-dd-yyyy HH:mm:ss";
@@ -15,6 +17,7 @@ const editedTimeFormat = "M/d/yyyy H:mm";
 const AddPracticeSession = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const songs: Song[] = useSelector((st: AppState) => st.songs);
     const [busy, setBusy] = useState({state: false, message: ""});
     const [practiceStartTime, setPracticeStartTime] = useState<number>(startTime);
     const [practiceStartTimeStr, setPracticeStartTimeStr] = useState<string>(DateUtils.formatDateTime(new Date(startTime), timeFormat));
@@ -29,6 +32,9 @@ const AddPracticeSession = () => {
     const [editedDateString, setEditedDateString] = useState<string>("");
     const [showReason, setShowReason] = useState<boolean>(false);
     const [noPracticeReason, setNoPracticeReason] = useState<string>("");
+    const [showAddSong, setShowAddSong] = useState<boolean>(false);
+	const [songName, setSongName] = useState<string>("");
+	const [selectedSongs, setSelectedSongs] = useState<Song[]>([]);
     let location = useLocation();
 
     useEffect(() => {
@@ -96,6 +102,44 @@ const AddPracticeSession = () => {
         setShow(false);
     };
 
+    const addRemoveSongSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+		let localSongList = [...selectedSongs];
+		// does the current array contain this song?
+        const incomingSong: Song = songs.find(s => s.songId === parseInt(event.target.value));
+		const alreadySelected = localSongList.some(song => song.songId === incomingSong.songId);
+        if (event.target.checked) {
+			if (!alreadySelected) {
+				console.log("Add song with ID: " + incomingSong.songId);
+				localSongList.push(incomingSong);
+				setSelectedSongs(localSongList);
+			}
+		} else {
+			// the user unchecked the box, so if it exists in the list, remove it
+			console.log("Remove song with ID: " + incomingSong.songId);
+			if (alreadySelected) {
+				localSongList = localSongList.filter(s => s.songId !== incomingSong.songId);
+				setSelectedSongs(localSongList);
+			}
+		}
+    };
+
+    const handleSaveSong = async () => {
+        setShowAddSong(false);
+        setBusy({state: true, message: "Adding new song to the list..."});
+        console.log("handleSaveSong");
+        const saveSongResult: any = await practiceService.saveNewSong(songName);
+        if (typeof saveSongResult.data === "string" && saveSongResult.data.startsWith("error")) {
+            console.log("There was an error saving the song: " + saveSongResult.data)
+        } else {
+            const song: Song = {
+                songId: parseInt(saveSongResult.data),
+                songNm: songName
+            };
+            dispatch(stateActions.addSong(song));
+            setBusy({state: false, message: ""});
+        }
+    };
+
     const handleSubmit = async () => {
         setBusy({state: true, message: "Saving current practice entry..."});
         const practiceEntry: PracticeEntry = {
@@ -106,7 +150,8 @@ const AddPracticeSession = () => {
             practiceLocation: practiceLocation,
             endDtTimeStr: practiceEndTimeStr,
             startDtTimeLong: practiceStartTime,
-            startDtTimeStr: practiceStartTimeStr
+            startDtTimeStr: practiceStartTimeStr,
+			songsPracticed: selectedSongs.map(song => song.songId)
         };
         console.log("handleSubmit - Here is the practiceEntry: ", practiceEntry);
         const saveEntryResult: any = await practiceService.savePracticeEntry(practiceEntry);
@@ -131,7 +176,8 @@ const AddPracticeSession = () => {
             practiceLocation: "None",
             endDtTimeStr: practiceStartTimeStr,
             startDtTimeLong: practiceStartTime,
-            startDtTimeStr: practiceStartTimeStr
+            startDtTimeStr: practiceStartTimeStr,
+            songsPracticed: []
         };
         console.log("handleSubmit - Here is the practiceEntry: ", practiceEntry);
         const saveEntryResult: any = await practiceService.savePracticeEntry(practiceEntry);
@@ -207,6 +253,33 @@ const AddPracticeSession = () => {
                         </Button>
                     </Modal.Footer>
                 </Modal>
+				<Modal show={showAddSong} onHide={() => {}}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Add Song</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Form>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Enter Song Name</Form.Label>
+                                <Form.Control
+                                    value={songName}
+                                    type="string"
+                                    placeholder="Enter a New Song Name"
+                                    onChange={evt => setSongName(evt.target.value)}
+                                    autoFocus
+                                />
+                            </Form.Group>
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => {}}>
+                            Close
+                        </Button>
+                        <Button variant="primary" onClick={handleSaveSong}>
+                            Save Song
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
                 <Row className="mb-2">
                     <Col lg={2}>
                         <Form.Label htmlFor="startDtTime">Start Time</Form.Label>
@@ -256,6 +329,22 @@ const AddPracticeSession = () => {
                         </Form.Control>
                     </Col>
                 </Row>
+				{songs && songs.length > 0 && songs.map(s =>
+					<Row key={s.songId} className="mb-2">
+						<Col>
+							<Form.Label>{s.songNm}</Form.Label>
+						</Col>
+						<Col>
+							<Form.Check
+								inline
+								value={s.songId}
+								onChange={addRemoveSongSelection}
+								checked={selectedSongs.some(song => song.songId === s.songId)}
+								type="checkbox"
+							/>
+						</Col>
+					</Row>
+				)}
                 <Row className="mb-2">
                     <Col lg={2}>
                         <Form.Label>Notes</Form.Label>
@@ -265,6 +354,11 @@ const AddPracticeSession = () => {
                         </Form.Control>
                     </Col>
                 </Row>
+				<Row className="mb-2">
+					<Col lg={10}>
+						<Button className="me-3" size="sm" onClick={() => setShowAddSong(true)}>Add Song</Button>
+					</Col>
+				</Row>
                 <Row className="mb-2">
                     <Col lg={2}>
                         <Form.Label htmlFor="endDtTime">End Time</Form.Label>

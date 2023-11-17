@@ -3,7 +3,8 @@ import {AppState} from "../model/AppState";
 import {PracticeEntry} from "../model/practice-entry";
 
 const initialState: AppState = {
-  practiceEntries: []
+  practiceEntries: [],
+  songs: []
 };
 const state = createSlice({
   name: "state",
@@ -15,6 +16,9 @@ const state = createSlice({
     },
     setPracticeEntries(state, action) {
       state.practiceEntries = action.payload;
+    },
+    addSong(state, action) {
+      state.songs.push(action.payload);
     }
   }
 });

@@ -7,4 +7,5 @@ export interface PracticeEntry {
     practiceLocation: string;
     lessonContent: string;
     notes: string;
+    songsPracticed: number[];
 }

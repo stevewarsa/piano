@@ -11,6 +11,10 @@ class PracticeService {
         return PracticeService.buildAxios().post("/piano-app/server/add_practice_entry.php", entry);
     }
 
+    public saveNewSong(songName: string) {
+        return PracticeService.buildAxios().post("/piano-app/server/add_song.php", songName);
+    }
+
     private static buildAxios(): AxiosInstance {
         // implement 15 second timeout
         const config: AxiosRequestConfig = {
