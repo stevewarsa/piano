@@ -41,6 +41,7 @@ const AddPracticeSession = () => {
     const [nextEntryIndex, setNextEntryIndex] = useState<number>(-1);
     const [prevEntryIndex, setPrevEntryIndex] = useState<number>(-1);
     const [currEntryIndex, setCurrEntryIndex] = useState<number>(-1);
+    const [editingExistingEntry, setEditingExistingEntry] = useState<boolean>(false);
     let location = useLocation();
 
     const loadSongs = async () => {
@@ -145,6 +146,7 @@ const AddPracticeSession = () => {
             // no songs marked as practiced this session, so empty out the selected songs
             setSelectedSongs([]);
         }
+        setEditingExistingEntry(true);
     }
 
     const handleLessonContent = (event: any) => {
@@ -186,8 +188,10 @@ const AddPracticeSession = () => {
 				console.log("Add song with ID: " + incomingSong.songId);
 				localSongList.push(incomingSong);
 				setSelectedSongs(localSongList);
-                const songString = "(" + DateUtils.formatDateTime(new Date(), timeOnlyFormat) + ") " + incomingSong.songNm;
-                setNotes(s => s != null && s.trim() !== '' ? s + '\n' + songString : s + songString);
+                if (!editingExistingEntry) {
+                    const songString = "(" + DateUtils.formatDateTime(new Date(), timeOnlyFormat) + ") " + incomingSong.songNm;
+                    setNotes(s => s != null && s.trim() !== '' ? s + '\n' + songString : s + songString);
+                }
 			}
 		} else {
 			// the user unchecked the box, so if it exists in the list, remove it
