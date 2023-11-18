@@ -242,7 +242,9 @@ const AddPracticeSession = () => {
         } else {
             dispatch(stateActions.addPracticeEntry(saveEntryResult.data));
             setBusy({state: false, message: ""});
-            navigate("/allEntries");
+            if (!editingExistingEntry) {
+                navigate("/allEntries");
+            }
         }
     };
 
