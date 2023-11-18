@@ -12,12 +12,14 @@ import {AppState} from "../model/AppState";
 
 const startTime = new Date().getTime();
 const timeFormat = "MM-dd-yyyy HH:mm:ss";
+const timeOnlyFormat = "H:mm";
 const editedTimeFormat = "M/d/yyyy H:mm";
 
 const AddPracticeSession = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const songs: Song[] = useSelector((st: AppState) => st.songs);
+    const practiceEntries: PracticeEntry[] = useSelector((st: AppState) => st.practiceEntries);
     const [busy, setBusy] = useState({state: false, message: ""});
     const [practiceStartTime, setPracticeStartTime] = useState<number>(startTime);
     const [practiceStartTimeStr, setPracticeStartTimeStr] = useState<string>(DateUtils.formatDateTime(new Date(startTime), timeFormat));
@@ -36,6 +38,9 @@ const AddPracticeSession = () => {
     const [showSongList, setShowSongList] = useState<boolean>(false);
 	const [songName, setSongName] = useState<string>("");
 	const [selectedSongs, setSelectedSongs] = useState<Song[]>([]);
+    const [nextEntryIndex, setNextEntryIndex] = useState<number>(-1);
+    const [prevEntryIndex, setPrevEntryIndex] = useState<number>(-1);
+    const [currEntryIndex, setCurrEntryIndex] = useState<number>(-1);
     let location = useLocation();
 
     const loadSongs = async () => {
@@ -43,6 +48,17 @@ const AddPracticeSession = () => {
             console.log("AddPracticeSession.useEffect[] - Songs are not loaded yet, so call server to load them...");
             const locSongs = await practiceService.getSongs();
             const songResponse: Song[] = locSongs.data;
+			songResponse.sort((a, b) => {
+			  const nameA = a.songNm.toUpperCase();
+			  const nameB = b.songNm.toUpperCase();
+			  if (nameA < nameB) {
+				return -1;
+			  }
+			  if (nameA > nameB) {
+				return 1;
+			  }
+			  return 0;
+			});
             dispatch(stateActions.setSongs(songResponse));
             return songResponse;
         } else {
@@ -53,6 +69,14 @@ const AddPracticeSession = () => {
     useEffect(() => {
         // when this component initially loads, get the songs if not already loaded
         loadSongs();
+        if (!practiceEntries || practiceEntries.length === 0) {
+            practiceService.getPracticeEntries().then(async practiceData => {
+                const entries: PracticeEntry[] = practiceData.data;
+                dispatch(stateActions.setPracticeEntries(entries));
+                setBusy({state: false, message: ""});
+                console.log("AllEntries.useEffect[] - here are all the practice entries:", practiceData.data);
+            });
+        }
     }, []);
 
     useEffect(() => {
@@ -78,31 +102,7 @@ const AddPracticeSession = () => {
             setBusy({state: false, message: ""});
         });
         if (location?.state?.hasOwnProperty("startDtTimeLong")) {
-            const practiceEntryToEdit: PracticeEntry = location.state as PracticeEntry;
-            console.log("AddPracticeSession.useEffect[dispatch] - practiceEntryToEdit: ", practiceEntryToEdit);
-            setPracticeStartTime(parseInt(String(practiceEntryToEdit.startDtTimeLong)));
-            setPracticeStartTimeStr(practiceEntryToEdit.startDtTimeStr);
-            setPracticeLocation(practiceEntryToEdit.practiceLocation);
-            setNotes(practiceEntryToEdit.notes);
-            setLessonContent(practiceEntryToEdit.lessonContent);
-            setPracticeEndTime(parseInt(String(practiceEntryToEdit.endDtTimeLong)));
-            setPracticeEndTimeStr(practiceEntryToEdit.endDtTimeStr);
-            setDuration(parseInt(String(practiceEntryToEdit.duration)));
-            if (practiceEntryToEdit.songsPracticed && practiceEntryToEdit.songsPracticed.length > 0) {
-                if (!songs || songs.length === 0) {
-                    loadSongs().then(songsJustLoaded => {
-                        const songsPracticedForEntry = practiceEntryToEdit.songsPracticed.map(songId => songsJustLoaded.find(s => s.songId === songId));
-                        console.log("AddPracticeSession.useEffect[dispatch] - setting selected songs to:", songsPracticedForEntry);
-                        setSelectedSongs(songsPracticedForEntry);
-                        setShowSongList(true);
-                    });
-                } else {
-                    const songsPracticedForEntry = practiceEntryToEdit.songsPracticed.map(songId => songs.find(s => s.songId === songId));
-                    console.log("AddPracticeSession.useEffect[dispatch] - setting selected songs to:", songsPracticedForEntry);
-                    setSelectedSongs(songsPracticedForEntry);
-                    setShowSongList(true);
-                }
-            }
+            handleEditCase(location.state as PracticeEntry);
         } else {
             // make sure to update the start time everytime this component is mounted
             const newStartTime = new Date().getTime();
@@ -110,6 +110,42 @@ const AddPracticeSession = () => {
             setPracticeStartTimeStr(DateUtils.formatDateTime(new Date(newStartTime), timeFormat));
         }
     }, [dispatch]);
+
+    const handleEditCase = (practiceEntryToEdit: PracticeEntry) => {
+        console.log("AddPracticeSession.useEffect[dispatch] - practiceEntryToEdit: ", practiceEntryToEdit);
+        const currentEntryIndex = practiceEntries?.findIndex(pe => pe.startDtTimeLong === practiceEntryToEdit.startDtTimeLong);
+        if (currentEntryIndex >= 0) {
+            setCurrEntryIndex(currentEntryIndex);
+            setNextEntryIndex(currentEntryIndex === (practiceEntries?.length - 1) ? 0 : currentEntryIndex + 1);
+            setPrevEntryIndex(currentEntryIndex === 0 ? (practiceEntries?.length - 1) : currentEntryIndex - 1);
+        }
+        setPracticeStartTime(parseInt(String(practiceEntryToEdit.startDtTimeLong)));
+        setPracticeStartTimeStr(practiceEntryToEdit.startDtTimeStr);
+        setPracticeLocation(practiceEntryToEdit.practiceLocation);
+        setNotes(practiceEntryToEdit.notes);
+        setLessonContent(practiceEntryToEdit.lessonContent);
+        setPracticeEndTime(parseInt(String(practiceEntryToEdit.endDtTimeLong)));
+        setPracticeEndTimeStr(practiceEntryToEdit.endDtTimeStr);
+        setDuration(parseInt(String(practiceEntryToEdit.duration)));
+        if (practiceEntryToEdit.songsPracticed && practiceEntryToEdit.songsPracticed.length > 0) {
+            if (!songs || songs.length === 0) {
+                loadSongs().then(songsJustLoaded => {
+                    const songsPracticedForEntry = practiceEntryToEdit.songsPracticed.map(songId => songsJustLoaded.find(s => s.songId === songId));
+                    console.log("AddPracticeSession.useEffect[dispatch] - setting selected songs to:", songsPracticedForEntry);
+                    setSelectedSongs(songsPracticedForEntry);
+                    setShowSongList(true);
+                });
+            } else {
+                const songsPracticedForEntry = practiceEntryToEdit.songsPracticed.map(songId => songs.find(s => s.songId === songId));
+                console.log("AddPracticeSession.useEffect[dispatch] - setting selected songs to:", songsPracticedForEntry);
+                setSelectedSongs(songsPracticedForEntry);
+                setShowSongList(true);
+            }
+        } else {
+            // no songs marked as practiced this session, so empty out the selected songs
+            setSelectedSongs([]);
+        }
+    }
 
     const handleLessonContent = (event: any) => {
         setLessonContent(event.target.value);
@@ -150,6 +186,8 @@ const AddPracticeSession = () => {
 				console.log("Add song with ID: " + incomingSong.songId);
 				localSongList.push(incomingSong);
 				setSelectedSongs(localSongList);
+                const songString = "(" + DateUtils.formatDateTime(new Date(), timeOnlyFormat) + ") " + incomingSong.songNm;
+                setNotes(s => s != null && s.trim() !== '' ? s + '\n' + songString : s + songString);
 			}
 		} else {
 			// the user unchecked the box, so if it exists in the list, remove it
@@ -231,11 +269,32 @@ const AddPracticeSession = () => {
 
     };
 
+    const handleNextPrev = (next: boolean) => {
+        if (next) {
+            handleEditCase(practiceEntries[nextEntryIndex]);
+        } else {
+            handleEditCase(practiceEntries[prevEntryIndex]);
+        }
+    };
+
     if (busy.state) {
         return <SpinnerTimer message={busy.message} />;
     } else {
         return (
             <Container className="mt-3">
+                {practiceEntries && practiceEntries.length > 0 && currEntryIndex !== -1 && nextEntryIndex !== -1 && prevEntryIndex !== -1 &&
+                <Row className="mb-2 text-center">
+                    <Col className="text-center d-flex align-items-center">
+                        <Button className="me-3" variant={"outline-primary"} size="lg" onClick={() => handleNextPrev(false)}>
+                            <i className="fa fa-arrow-left" />
+                        </Button>
+                        <span className="fw-bold fs-1 me-3">{currEntryIndex + 1}</span>
+                        <Button variant={"outline-primary"} size="lg" onClick={() => handleNextPrev(true)}>
+                            <i className="fa fa-arrow-right" />
+                        </Button>
+                    </Col>
+                </Row>
+                }
                 <h3 className="mb-3">Add Practice Session</h3>
                 <Modal show={show} onHide={handleClose}>
                     <Modal.Header closeButton>
