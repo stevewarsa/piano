@@ -33,6 +33,8 @@ const AddPracticeSession = () => {
     const [editingStartDateTime, setEditingStartDateTime] = useState<boolean>(false);
     const [editedDateString, setEditedDateString] = useState<string>("");
     const [showReason, setShowReason] = useState<boolean>(false);
+    const [showConfirm, setShowConfirm] = useState<boolean>(false);
+    const [submitValidationReasons, setSubmitValidationReasons] = useState<string[]>([]);
     const [noPracticeReason, setNoPracticeReason] = useState<string>("");
     const [showAddSong, setShowAddSong] = useState<boolean>(false);
     const [showSongList, setShowSongList] = useState<boolean>(false);
@@ -283,6 +285,18 @@ const AddPracticeSession = () => {
         }
     };
 
+    const getValidationMessages = () => {
+        const locValidationReasons = [];
+        if (!lessonContent || lessonContent.trim() === "") {
+            locValidationReasons.push("You've not added a title.");
+        }
+        if (practiceEndTime === undefined) {
+            locValidationReasons.push("The end date of the practice session has not been set.")
+        }
+        setSubmitValidationReasons(locValidationReasons);
+        return locValidationReasons;
+    }
+
     if (busy.state) {
         return <SpinnerTimer message={busy.message} />;
     } else {
@@ -383,6 +397,22 @@ const AddPracticeSession = () => {
                         </Button>
                     </Modal.Footer>
                 </Modal>
+                <Modal show={showConfirm} onHide={() => {}}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Submit?</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <ol>
+                            {submitValidationReasons.map(r => <li key={r}>{r}</li>)}
+                        </ol>
+                        The above validation errors have been found.  Would you like to continue?
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="primary" onClick={handleSubmit}>Yes</Button>
+                        <Button variant="secondary" onClick={() => setShowConfirm(false)}>No</Button>
+                    </Modal.Footer>
+                </Modal>
+
                 <Row className="mb-2">
                     <Col lg={2}>
                         <Form.Label htmlFor="startDtTime">Start Time</Form.Label>
@@ -500,7 +530,7 @@ const AddPracticeSession = () => {
                 }
                 <Row className="mb-2">
                     <Col lg={6}>
-                        <Button className="me-3" onClick={handleSubmit}>Submit</Button>
+                        <Button className="me-3" onClick={() => getValidationMessages().length > 0 ? setShowConfirm(true) : handleSubmit()}>Submit</Button>
                         <Button onClick={() => setShowReason(true)}>No Practice Today</Button>
                     </Col>
                 </Row>
