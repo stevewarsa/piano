@@ -1,7 +1,7 @@
 import {useDispatch, useSelector} from "react-redux";
 import {useEffect, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
-import {Button, Col, Container, Form, Modal, Row} from "react-bootstrap";
+import {Button, Col, Container, Form, Row} from "react-bootstrap";
 import SpinnerTimer from "../components/SpinnerTimer";
 import practiceService from "../services/practice-service";
 import {stateActions} from "../store";
@@ -9,12 +9,14 @@ import {DateUtils} from "../helpers/date.utils";
 import {PracticeEntry} from "../model/practice-entry";
 import {Song} from "../model/song";
 import {AppState} from "../model/AppState";
+import EditDateComponent from "../components/EditDateComponent";
+import EnterNoPracticeReasonComponent from "../components/EnterNoPracticeReasonComponent";
+import AddSongComponent from "../components/AddSongComponent";
+import SubmitConfirmComponent from "../components/SubmitConfirmComponent";
+import NextPrevNavigationComponent from "../components/NextPrevNavigationComponent";
+import {editedTimeFormat, timeFormat, timeOnlyFormat} from "../model/format-constants";
 
 const startTime = new Date().getTime();
-const timeFormat = "MM-dd-yyyy HH:mm:ss";
-const timeOnlyFormat = "H:mm";
-const editedTimeFormat = "M/d/yyyy H:mm";
-
 const AddPracticeSession = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -303,116 +305,11 @@ const AddPracticeSession = () => {
         return (
             <Container className="mt-3">
                 {practiceEntries && practiceEntries.length > 0 && currEntryIndex !== -1 && nextEntryIndex !== -1 && prevEntryIndex !== -1 &&
-                <Row className="mb-2 text-center">
-                    <Col className="text-center d-flex align-items-center">
-                        <Button className="me-3" variant={"outline-primary"} size="lg" onClick={() => handleNextPrev(false)}>
-                            <i className="fa fa-arrow-left" />
-                        </Button>
-                        <span className="fw-bold fs-1 me-3">{currEntryIndex + 1}</span>
-                        <Button variant={"outline-primary"} size="lg" onClick={() => handleNextPrev(true)}>
-                            <i className="fa fa-arrow-right" />
-                        </Button>
-                    </Col>
-                </Row>
+                    <NextPrevNavigationComponent onClick={() => handleNextPrev(false)}
+                                                 currEntryIndex={currEntryIndex}
+                                                 onClick1={() => handleNextPrev(true)}/>
                 }
                 <h3 className="mb-3">Add Practice Session</h3>
-                <Modal show={show} onHide={handleClose}>
-                    <Modal.Header closeButton>
-                        <Modal.Title>Edit {editingStartDateTime ? "Start" : "End"} Date</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <Form>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Enter Date/Time ({timeFormat})</Form.Label>
-                                <Form.Control
-                                    value={editedDateString}
-                                    type="string"
-                                    placeholder={timeFormat}
-                                    onChange={evt => setEditedDateString(evt.target.value)}
-                                    autoFocus
-                                />
-                            </Form.Group>
-                        </Form>
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <Button variant="secondary" onClick={handleClose}>
-                            Close
-                        </Button>
-                        <Button variant="primary" onClick={handleSaveDate}>
-                            Save Changes
-                        </Button>
-                    </Modal.Footer>
-                </Modal>
-                <Modal show={showReason} onHide={() => setShowReason(false)}>
-                    <Modal.Header closeButton>
-                        <Modal.Title>No Practice Reason</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <Form>
-                            <Form.Group className="mb-3">
-                                <Form.Label>No Practice Reason</Form.Label>
-                                <Form.Control
-                                    value={noPracticeReason}
-                                    type="string"
-                                    placeholder="Enter No Practice Reason"
-                                    onChange={evt => setNoPracticeReason(evt.target.value)}
-                                    autoFocus
-                                />
-                            </Form.Group>
-                        </Form>
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <Button variant="secondary" onClick={() => setShowReason(false)}>
-                            Close
-                        </Button>
-                        <Button variant="primary" onClick={handleNoPractice}>
-                            Save Changes
-                        </Button>
-                    </Modal.Footer>
-                </Modal>
-				<Modal show={showAddSong} onHide={() => {}}>
-                    <Modal.Header closeButton>
-                        <Modal.Title>Add Song</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <Form>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Enter Song Name</Form.Label>
-                                <Form.Control
-                                    value={songName}
-                                    type="string"
-                                    placeholder="Enter a New Song Name"
-                                    onChange={evt => setSongName(evt.target.value)}
-                                    autoFocus
-                                />
-                            </Form.Group>
-                        </Form>
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <Button variant="secondary" onClick={() => {}}>
-                            Close
-                        </Button>
-                        <Button variant="primary" onClick={handleSaveSong}>
-                            Save Song
-                        </Button>
-                    </Modal.Footer>
-                </Modal>
-                <Modal show={showConfirm} onHide={() => {}}>
-                    <Modal.Header closeButton>
-                        <Modal.Title>Submit?</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <ol>
-                            {submitValidationReasons.map(r => <li key={r}>{r}</li>)}
-                        </ol>
-                        The above validation errors have been found.  Would you like to continue?
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <Button variant="primary" onClick={handleSubmit}>Yes</Button>
-                        <Button variant="secondary" onClick={() => setShowConfirm(false)}>No</Button>
-                    </Modal.Footer>
-                </Modal>
-
                 <Row className="mb-2">
                     <Col lg={2}>
                         <Form.Label htmlFor="startDtTime">Start Time</Form.Label>
@@ -421,7 +318,8 @@ const AddPracticeSession = () => {
                         <Form.Text id="startDtTime" className="me-3">
                             {practiceStartTimeStr}
                         </Form.Text>
-                        <Button className="me-3" size="sm" onClick={() => setPracticeStartTime(new Date().getTime())}>Now</Button>
+                        <Button className="me-3" size="sm"
+                                onClick={() => setPracticeStartTime(new Date().getTime())}>Now</Button>
                         <Button className="me-3" size="sm" onClick={() => {
                             setEditingStartDateTime(true);
                             setShow(true);
@@ -465,42 +363,44 @@ const AddPracticeSession = () => {
                 {songs && songs.length > 0 &&
                     <Row className="mb-2">
                         <Col>
-                            <Button variant={"outline-primary"} className="me-3" size="lg" onClick={() => setShowSongList(!showSongList)}>
-                                <i className={showSongList ? "fa fa-toggle-up me-2" : "fa fa-toggle-down me-2"} /> {showSongList ? " Hide Song List" : " Show Song List"}
+                            <Button variant={"outline-primary"} className="me-3" size="lg"
+                                    onClick={() => setShowSongList(!showSongList)}>
+                                <i className={showSongList ? "fa fa-toggle-up me-2" : "fa fa-toggle-down me-2"}/> {showSongList ? " Hide Song List" : " Show Song List"}
                             </Button>
                         </Col>
                     </Row>
                 }
                 {songs && songs.length > 0 && showSongList && songs.map(s =>
-					<Row key={s.songId} className="m-2 p-1 border border-info">
-						<Col>
-							<Form.Label>{s.songNm}</Form.Label>
-						</Col>
-						<Col>
-							<Form.Check
-								inline
-								value={s.songId}
-								onChange={addRemoveSongSelection}
-								checked={selectedSongs.some(song => song.songId === s.songId)}
-								type="checkbox"
-							/>
-						</Col>
-					</Row>
-				)}
+                    <Row key={s.songId} className="m-2 p-1 border border-info">
+                        <Col>
+                            <Form.Label>{s.songNm}</Form.Label>
+                        </Col>
+                        <Col>
+                            <Form.Check
+                                inline
+                                value={s.songId}
+                                onChange={addRemoveSongSelection}
+                                checked={selectedSongs.some(song => song.songId === s.songId)}
+                                type="checkbox"
+                            />
+                        </Col>
+                    </Row>
+                )}
                 <Row className="mb-2">
                     <Col lg={2}>
                         <Form.Label>Notes</Form.Label>
                     </Col>
                     <Col lg={10}>
-                        <Form.Control className="fs-1" as="textarea" rows={5} value={notes} placeholder="Notes" onChange={handleNotes}>
+                        <Form.Control className="fs-1" as="textarea" rows={5} value={notes} placeholder="Notes"
+                                      onChange={handleNotes}>
                         </Form.Control>
                     </Col>
                 </Row>
-				<Row className="mb-2">
-					<Col lg={10}>
-						<Button className="me-3" size="sm" onClick={handleShowAddSong}>Add Song</Button>
-					</Col>
-				</Row>
+                <Row className="mb-2">
+                    <Col lg={10}>
+                        <Button className="me-3" size="sm" onClick={handleShowAddSong}>Add Song</Button>
+                    </Col>
+                </Row>
                 <Row className="mb-2">
                     <Col lg={2}>
                         <Form.Label htmlFor="endDtTime">End Time</Form.Label>
@@ -509,7 +409,8 @@ const AddPracticeSession = () => {
                         <Form.Text id="endDtTime" className="me-3">
                             {practiceEndTimeStr}
                         </Form.Text>
-                        <Button className="me-3" size="sm" onClick={() => setPracticeEndTime(new Date().getTime())}>Now</Button>
+                        <Button className="me-3" size="sm"
+                                onClick={() => setPracticeEndTime(new Date().getTime())}>Now</Button>
                         <Button className="me-3" size="sm" onClick={() => {
                             setEditingStartDateTime(false);
                             setShow(true);
@@ -517,23 +418,47 @@ const AddPracticeSession = () => {
                     </Col>
                 </Row>
                 {duration > -1 &&
-                <Row className="mb-2">
-                    <Col lg={2}>
-                        <Form.Label htmlFor="duration">Duration</Form.Label>
-                    </Col>
-                    <Col lg={10}>
-                        <Form.Text id="duration">
-                            {duration} minutes
-                        </Form.Text>
-                    </Col>
-                </Row>
+                    <Row className="mb-2">
+                        <Col lg={2}>
+                            <Form.Label htmlFor="duration">Duration</Form.Label>
+                        </Col>
+                        <Col lg={10}>
+                            <Form.Text id="duration">
+                                {duration} minutes
+                            </Form.Text>
+                        </Col>
+                    </Row>
                 }
                 <Row className="mb-2">
                     <Col lg={6}>
-                        <Button className="me-3" onClick={() => getValidationMessages().length > 0 ? setShowConfirm(true) : handleSubmit()}>Submit</Button>
+                        <Button className="me-3"
+                                onClick={() => getValidationMessages().length > 0 ? setShowConfirm(true) : handleSubmit()}>Submit</Button>
                         <Button onClick={() => setShowReason(true)}>No Practice Today</Button>
                     </Col>
                 </Row>
+                <EditDateComponent show={show}
+                                   onHide={handleClose}
+                                   editingStartDateTime={editingStartDateTime}
+                                   value={editedDateString}
+                                   onChange={evt => setEditedDateString(evt.target.value)}
+                                   onClick={handleSaveDate}/>
+                <EnterNoPracticeReasonComponent show={showReason}
+                                                onHide={() => setShowReason(false)}
+                                                value={noPracticeReason}
+                                                onChange={evt => setNoPracticeReason(evt.target.value)}
+                                                onClick={handleNoPractice}/>
+                <AddSongComponent show={showAddSong}
+                                  onHide={() => {}}
+                                  value={songName}
+                                  onChange={evt => setSongName(evt.target.value)}
+                                  onClick={() => {}}
+                                  onClick1={handleSaveSong}/>
+                <SubmitConfirmComponent show={showConfirm}
+                                        onHide={() => {}}
+                                        strings={submitValidationReasons}
+                                        callbackfn={r => <li key={r}>{r}</li>}
+                                        onClick={handleSubmit}
+                                        onClick1={() => setShowConfirm(false)}/>
             </Container>
         );
     }
