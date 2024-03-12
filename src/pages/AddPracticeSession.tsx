@@ -23,13 +23,32 @@ const AddPracticeSession = () => {
     const songs: Song[] = useSelector((st: AppState) => st.songs);
     const practiceEntries: PracticeEntry[] = useSelector((st: AppState) => st.practiceEntries);
     const [busy, setBusy] = useState({state: false, message: ""});
-    const [practiceStartTime, setPracticeStartTime] = useState<number>(startTime);
-    const [practiceStartTimeStr, setPracticeStartTimeStr] = useState<string>(DateUtils.formatDateTime(new Date(startTime), timeFormat));
-    const [practiceEndTime, setPracticeEndTime] = useState<number>(undefined);
-    const [practiceEndTimeStr, setPracticeEndTimeStr] = useState<string>("N/A");
+    const [practiceStartTime, setPracticeStartTime] = useState<number>(() => {
+        const pstart = localStorage.getItem("practiceStartTime");
+        if (pstart) {
+            return parseInt(pstart, 10);
+        } else {
+            console.log("AddPracticeSession.useState - setting practiceStartTime in localStorage to " + startTime);
+            localStorage.setItem("practiceStartTime", "" + startTime);
+            return startTime;
+        }
+    });
+    const [practiceStartTimeStr, setPracticeStartTimeStr] = useState<string>(() => {
+        const pstart = localStorage.getItem("practiceStartTime");
+        const stDtTime =  pstart ? parseInt(pstart, 10) : startTime;
+        return DateUtils.formatDateTime(new Date(stDtTime), timeFormat)
+    });
+    const [practiceEndTime, setPracticeEndTime] = useState<number>(() => {
+        const pend = localStorage.getItem("practiceEndTime");
+        return pend ? parseInt(pend, 10) : undefined;
+    });
+    const [practiceEndTimeStr, setPracticeEndTimeStr] = useState<string>(() => {
+        const pend = localStorage.getItem("practiceEndTime");
+        return pend ? DateUtils.formatDateTime(new Date(parseInt(pend, 10)), timeFormat) : "N/A";
+    });
     const [practiceLocation, setPracticeLocation] = useState<string>("Church");
-    const [lessonContent, setLessonContent] = useState<string>("");
-    const [notes, setNotes] = useState<string>("");
+    const [lessonContent, setLessonContent] = useState<string>(() => localStorage.getItem("lessonContent") || "");
+    const [notes, setNotes] = useState<string>(localStorage.getItem("notes") || "");
     const [duration, setDuration] = useState<number>(-1);
     const [show, setShow] = useState<boolean>(false);
     const [editingStartDateTime, setEditingStartDateTime] = useState<boolean>(false);
@@ -41,7 +60,14 @@ const AddPracticeSession = () => {
     const [showAddSong, setShowAddSong] = useState<boolean>(false);
     const [showSongList, setShowSongList] = useState<boolean>(false);
 	const [songName, setSongName] = useState<string>("");
-	const [selectedSongs, setSelectedSongs] = useState<Song[]>([]);
+	const [selectedSongs, setSelectedSongs] = useState<Song[]>(() => {
+        const selSongsStr = localStorage.getItem("selectedSongs");
+        if (selSongsStr && selSongsStr.length > 0) {
+            return JSON.parse(selSongsStr);
+        } else {
+            return [];
+        }
+    });
     const [nextEntryIndex, setNextEntryIndex] = useState<number>(-1);
     const [prevEntryIndex, setPrevEntryIndex] = useState<number>(-1);
     const [currEntryIndex, setCurrEntryIndex] = useState<number>(-1);
@@ -89,6 +115,8 @@ const AddPracticeSession = () => {
         const formattedDateForEditing = DateUtils.formatDateTime(new Date(practiceStartTime), editedTimeFormat);
         setPracticeStartTimeStr(formattedDate);
         setEditedDateString(formattedDateForEditing);
+        console.log("AddPracticeSession.useEffect[practiceStartTime] - setting practiceStartTime in localStorage to " + practiceStartTime);
+        localStorage.setItem("practiceStartTime", practiceStartTime + "");
     }, [practiceStartTime]);
 
     useEffect(() => {
@@ -97,8 +125,31 @@ const AddPracticeSession = () => {
             console.log("AddPracticeSession.useEffect[practiceEndTime] - setting practiceEndTimeStr to " + DateUtils.formatDateTime(new Date(practiceEndTime), timeFormat));
             setPracticeEndTimeStr(DateUtils.formatDateTime(new Date(practiceEndTime), timeFormat));
             setDuration(DateUtils.minutesInBetween(new Date(practiceEndTime), new Date(practiceStartTime)));
+            console.log("AddPracticeSession.useEffect[practiceStartTime] - setting practiceEndTime in localStorage to " + practiceEndTime);
+            localStorage.setItem("practiceEndTime", practiceEndTime + "");
         }
     }, [practiceEndTime]);
+
+    useEffect(() => {
+        if (notes && notes.trim().length > 0) {
+            localStorage.setItem("notes", notes);
+            console.log("AddPracticeSession.useEffect[notes] - setting notes in localStorage to '" + notes + "'");
+        } else {
+            console.log("AddPracticeSession.useEffect[notes] - removing notes from localStorage...");
+            localStorage.removeItem("notes");
+        }
+    }, [notes]);
+
+    useEffect(() => {
+        if (selectedSongs && selectedSongs.length > 0) {
+            const songsJson = JSON.stringify(selectedSongs);
+            localStorage.setItem("selectedSongs", songsJson);
+            console.log("AddPracticeSession.useEffect[selectedSongs] - setting selectedSongs in localStorage to '" + songsJson + "'");
+        } else {
+            console.log("AddPracticeSession.useEffect[selectedSongs] - removing selectedSongs from localStorage...");
+            localStorage.removeItem("selectedSongs");
+        }
+    }, [selectedSongs]);
 
     useEffect(() => {
         setBusy({state: true, message: "Loading practice entries from DB..."});
@@ -110,7 +161,15 @@ const AddPracticeSession = () => {
             handleEditCase(location.state as PracticeEntry);
         } else {
             // make sure to update the start time everytime this component is mounted
-            const newStartTime = new Date().getTime();
+            const pstart = localStorage.getItem("practiceStartTime");
+            let newStartTime: number;
+            if (pstart) {
+                newStartTime = parseInt(pstart, 10);
+            } else {
+                console.log("AddPracticeSession.useState - setting practiceStartTime in localStorage to " + startTime);
+                localStorage.setItem("practiceStartTime", "" + startTime);
+                newStartTime = startTime;
+            }
             setPracticeStartTime(newStartTime);
             setPracticeStartTimeStr(DateUtils.formatDateTime(new Date(newStartTime), timeFormat));
         }
@@ -154,6 +213,8 @@ const AddPracticeSession = () => {
     }
 
     const handleLessonContent = (event: any) => {
+        console.log("AddPracticeSession.handleLessonContent - setting lessonContent to: '" + event.target.value + "'");
+        localStorage.setItem("lessonContent", event.target.value);
         setLessonContent(event.target.value);
     };
 
@@ -176,6 +237,8 @@ const AddPracticeSession = () => {
         const dt = DateUtils.parseDate(editedDateString, editedTimeFormat);
         if (editingStartDateTime) {
             setPracticeStartTime(dt.getTime());
+            console.log("AddPracticeSession.handleSaveDate - setting practiceStartTime to: " + dt.getTime());
+            localStorage.setItem("practiceStartTime", dt.getTime() + "");
         } else {
             setPracticeEndTime(dt.getTime());
         }
@@ -244,12 +307,19 @@ const AddPracticeSession = () => {
         if (typeof saveEntryResult.data === "string" && saveEntryResult.data.startsWith("error")) {
             console.log("There was an error: " + saveEntryResult.data)
         } else {
+            clearLocalStorageItems();
             dispatch(stateActions.addPracticeEntry(saveEntryResult.data));
             setBusy({state: false, message: ""});
             if (!editingExistingEntry) {
                 navigate("/allEntries");
             }
         }
+    };
+
+    const clearLocalStorageItems = () => {
+        const keys = ["notes", "practiceStartTime", "practiceEndTime", "selectedSongs", "lessonContent"];
+        console.log("Clearing local storage for the following keys: ", keys);
+        keys.forEach(key => localStorage.removeItem(key));
     };
 
     const handleNoPractice = async () => {
@@ -272,6 +342,7 @@ const AddPracticeSession = () => {
         if (typeof saveEntryResult.data === "string" && saveEntryResult.data.startsWith("error")) {
             console.log("There was an error: " + saveEntryResult.data)
         } else {
+            clearLocalStorageItems();
             dispatch(stateActions.addPracticeEntry(saveEntryResult.data));
             setBusy({state: false, message: ""});
             navigate("/allEntries");
